@@ -200,4 +200,40 @@ $(document).ready(function() {
     }
   });
 
+  asyncTest("Router: routes configured window when running in an iframe", 1, function() {
+    var $wrapper = $('<div style="display:none"/>'),
+        $iframe = $('<iframe />');
+
+    $wrapper.append($iframe).appendTo($('body'));
+    $iframe.get(0).contentWindow.document.write([
+      '<head>',
+        // TODO: Make it work with Zepto and load whatever the test-runner uses.
+        '<script type="text/javascript" src="vendor/jquery-1.7.1.js"></script>',
+        '<script type="text/javascript" src="vendor/underscore-1.2.4.js"></script>',
+        '<script type="text/javascript" src="../backbone.js"></script>',
+        '<script type="text/javascript">',
+           // Make a router that sets a global "anything" to the location hash.
+          'var Router = Backbone.Router.extend({ routes: { "*anything": "anything" }, ',
+                                               ' anything: function(whatever) { window.anything = whatever } ',
+          '});',
+          'router = new Router();',
+          // Note that we're configuring the window here.
+          'Backbone.history.start({window: window.parent});',
+        '</script>',
+      '</head>',
+      '<body></body>'
+    ].join(''));
+
+    // Give the iframe some time to load.
+    setTimeout(function() {
+      window.location.hash = 'anything';
+
+      setTimeout(function() {
+        equal($iframe.get(0).contentWindow.anything, 'anything');
+        start();
+        window.location.hash = '';
+      }, 10);
+    }, 100);
+  });
+
 });
